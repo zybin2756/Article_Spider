@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import os
 # Scrapy settings for ArticleSpider project
 #
 # For simplicity, this file contains only settings considered important or
@@ -14,8 +14,17 @@ BOT_NAME = 'ArticleSpider'
 SPIDER_MODULES = ['ArticleSpider.spiders']
 NEWSPIDER_MODULE = 'ArticleSpider.spiders'
 
+# img pipeline
+IMAGES_URLS_FIELD = "img_url"
+IMAGES_RESULT_FIELD = "img_path"
+project_dir = os.path.dirname(os.path.abspath(__file__))
+IMAGES_STORE = os.path.join(project_dir,"img")
 
-
+# mysql setting
+MYSQL_HOST = "127.0.0.1"
+MYSQL_DBNAME = "article_spider"
+MYSQL_USER = "root"
+MYSQL_PASSWORD = ""
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'ArticleSpider (+http://www.yourdomain.com)'
 
@@ -66,9 +75,12 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
+   'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
+   # 'ArticleSpider.pipelines.ImageDownloadPipeline': 1,
+   'scrapy.pipelines.images.ImagesPipeline': 1,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
