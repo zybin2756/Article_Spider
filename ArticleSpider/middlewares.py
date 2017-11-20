@@ -70,4 +70,6 @@ class RandomHeaderMiddleware(object):
         def get_ua():
             return getattr(self.ua,self.ua_type)
 
-        request.headers.setdefault('User-Agent', get_ua())
+        ua = get_ua()
+        print(ua)
+        request.headers.setdefault('User-Agent', ua)

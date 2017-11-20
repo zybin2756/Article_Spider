@@ -56,16 +56,16 @@ ROBOTSTXT_OBEY = False
 
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
-#    'ArticleSpider.middlewares.ArticlespiderSpiderMiddleware': 543,
-#}
+# SPIDER_MIDDLEWARES = {
+#    'ArticleSpider.middlewares.RandomHeaderMiddleware': 1,
+# }
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-RANDOM_UA_TYPE = "random"
-DOWNLOADER_MIDDLEWARES = {
-   'ArticleSpider.middlewares.RandomHeaderMiddleware': 543,
-}
+# RANDOM_UA_TYPE = "firefox"
+# DOWNLOADER_MIDDLEWARES = {
+#    'ArticleSpider.middlewares.RandomHeaderMiddleware': 1,
+# }
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
@@ -79,7 +79,7 @@ ITEM_PIPELINES = {
    'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
    'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
    # 'ArticleSpider.pipelines.ImageDownloadPipeline': 1,
-   'scrapy.pipelines.images.ImagesPipeline': 1,
+   # 'scrapy.pipelines.images.ImagesPipeline': 1,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

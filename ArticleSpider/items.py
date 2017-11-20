@@ -56,10 +56,10 @@ class JobboleArticleItem(scrapy.Item):
                 "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE vote_nums=VALUES(vote_nums)," \
                 "mark_nums=VALUES(mark_nums),comment_nums=VALUES(comment_nums),crawl_time=VALUES(crawl_time)"
 
-        img_path = self['img_path'][0]['path']
+        # img_path = self['img_path'][0]['path']
 
         params = (self["object_id"], self["title"], self["create_time"], self["crawl_time"],
                   self["vote_nums"], self["mark_nums"], self["comment_nums"],self["url"],
-                  img_path, self["content"])
+                  self["img_url"], self["content"])
 
         return sql,params
