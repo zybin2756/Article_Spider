@@ -10,7 +10,7 @@ from ArticleSpider.items import ArticleLoaderItem
 class JobboleSpider(scrapy.Spider):
     name = 'jobbole'
     allowed_domains = ['blog.jobbole.com']
-    start_urls = ['http://blog.jobbole.com/all-posts/']
+    start_urls = ['http://blog.jobbole.com/all-posts/page/294']
 
     def parse(self, response):
         items = response.css(".post-thumb")

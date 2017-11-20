@@ -3,6 +3,7 @@ import scrapy
 import json
 import time
 import re
+from urllib import parse
 
 class ZhihuSpider(scrapy.Spider):
     name = 'zhihu'
@@ -18,7 +19,7 @@ class ZhihuSpider(scrapy.Spider):
     }
 
     def start_requests(self):
-        return [scrapy.Request(url="https://www.zhihu.com/#signin", headers=self.headers, callback=self.get_captcha)]
+        return [scrapy.Request(url="https://www.zhihu.com/", headers=self.headers, callback=self.check_login)]        #
 
     def get_captcha(self,response):
 
@@ -27,7 +28,7 @@ class ZhihuSpider(scrapy.Spider):
 
         t = int(time.time()*1000)
         captcha_url = self.captcha_url.format(t)
-        return [scrapy.Request(url=captcha_url, headers=self.headers,meta={"xsrf":xsrf},callback=self.login)]
+        return [scrapy.Request(url=captcha_url, headers=self.headers, meta={"xsrf":xsrf},callback=self.login)]
 
     def login(self,response):
         with open('cap.jpg', 'wb') as fp:
@@ -41,17 +42,28 @@ class ZhihuSpider(scrapy.Spider):
             "captcha":captcha_code
         }
         post_url = "https://www.zhihu.com/login/phone_num"
-        return [scrapy.FormRequest(url=post_url,formdata=data,callback=self.login_result)]
+        return [scrapy.FormRequest(url=post_url, headers=self.headers, formdata=data, callback=self.login_result)]
 
     def login_result(self,response):
         msg = json.loads(response.body)
         print(msg)
         if msg["r"] == 0:
             for url in self.start_urls:
-                yield scrapy.Request(url=url,dont_filter=True,callback=self.parse)
-        pass
+                yield scrapy.Request(url=url, headers=self.headers,dont_filter=True,callback=self.parse)
+
+    def check_login(self,response):
+        match_obj = re.findall(r'.*?/settings/profile.*?',response.text)
+        if len(match_obj) > 0:
+            for url in self.start_urls:
+                yield scrapy.Request(url=url, headers=self.headers,dont_filter=True,callback=self.parse)
+        else:
+            yield scrapy.Request(url="https://www.zhihu.com/#signin", dont_filter=True, headers=self.headers, callback=self.get_captcha)
 
     def parse(self, response):
-        print(response.body)
+        links = response.css("a::attr(href)").extract()
+        # links = [link for link in links if re.match(r".*?question/.*?",link)]
+        links = [parse.urljoin(response.url, link) for link in links]
+
+        print(links)
         pass
 
