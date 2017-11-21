@@ -20,6 +20,10 @@ class QuestionItemLoader(ItemLoader):
     default_output_processor = TakeFirst()
 
 
+class AnswerItemLoader(ItemLoader):
+    default_output_processor = TakeFirst()
+
+
 def strip(str):
     return str.strip()
 
@@ -78,17 +82,74 @@ class JobboleArticleItem(scrapy.Item):
 #   `crawl_time` date NOT NULL,
 #   `url` varchar(300) COLLATE utf8_bin NOT NULL,
 #   `object_id` char(32) COLLATE utf8_bin NOT NULL,
+#   `question_id` int(11) COLLATE utf8_bin NOT NULL,
 #   PRIMARY KEY (`object_id`)
 # ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
 #https://www.zhihu.com/api/v4/questions/21458823/answers?limit=20&offset=0&include=data[*].is_normal%2Cadmin_closed_comment%2Creward_info%2Cis_collapsed%2Cannotation_action%2Cannotation_detail%2Ccollapse_reason%2Cis_sticky%2Ccollapsed_by%2Csuggest_edit%2Ccomment_count%2Ccan_comment%2Ccontent%2Ceditable_content%2Cvoteup_count%2Creshipment_settings%2Ccomment_permission%2Ccreated_time%2Cupdated_time%2Creview_info%2Cquestion%2Cexcerpt%2Crelationship.is_authorized%2Cis_author%2Cvoting%2Cis_thanked%2Cis_nothelp%2Cupvoted_followees&data[*].author.follower_count%2Cbadge[%3F(type=best_answerer)].topics&data[*].mark_infos[*].url=&sort_by=default
+
+
 class ZhihuQuestionItem(scrapy.Item):
     title = scrapy.Field()
     detail = scrapy.Field()
-    comment_nums = scrapy.Field()
+    comment_nums = scrapy.Field(input_processor=MapCompose(strip,get_nums))
     attention_nums = scrapy.Field()
     watch_nums = scrapy.Field()
     tags = scrapy.Field(output_processor=MapCompose(return_value))
     crawl_time = scrapy.Field()
     url = scrapy.Field()
     object_id = scrapy.Field()
+    question_id = scrapy.Field()
+
+    def get_insert_sql(self):
+        sql = "INSERT INTO `zhihu_question`(`title`, `detail`, `comment_nums`, `attention_nums`, " \
+              "`watch_nums`, `tags`, `crawl_time`, `url`, `object_id`,`question_id`) " \
+              "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE comment_nums=VALUES(comment_nums)" \
+              ",attention_nums=VALUES(attention_nums),watch_nums=VALUES(watch_nums),crawl_time=VALUES(crawl_time)"
+
+        self["tags"] = ",".join(self["tags"])
+
+        params = (self["title"], self["detail"], self["comment_nums"], self["attention_nums"],
+                  self["watch_nums"], self["tags"], self["crawl_time"], self["url"],
+                  self["object_id"],self["question_id"])
+
+        return sql, params
+
+
+
+# CREATE TABLE `zhihu_answer` (
+#   `object_id` char(32) COLLATE utf8_bin NOT NULL,
+#   `answer_id` int(11) NOT NULL,
+#   `question_id` int(11) NOT NULL,
+#   `author_id` varchar(32) COLLATE utf8_bin NOT NULL,
+#   `created_time` date NOT NULL,
+#   `voteup_count` int(11) NOT NULL,
+#   `url` varchar(300) COLLATE utf8_bin NOT NULL,
+#   `updated_time` date NOT NULL,
+#   `crawl_time` date NOT NULL,
+#   `content` text COLLATE utf8_bin NOT NULL,
+#   `comment_count` int(11) NOT NULL
+# ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+class ZhihuAnswerItem(scrapy.Item):
+    object_id = scrapy.Field()
+    answer_id = scrapy.Field()
+    question_id = scrapy.Field()
+    created_time = scrapy.Field()
+    voteup_count = scrapy.Field()
+    url = scrapy.Field()
+    updated_time = scrapy.Field()
+    crawl_time = scrapy.Field()
+    author_id = scrapy.Field()
+    content = scrapy.Field()
+    comment_count = scrapy.Field()
+
+    def get_insert_sql(self):
+        sql = "INSERT INTO `zhihu_answer`(`object_id`, `answer_id`, `question_id`, `author_id`, " \
+              "`created_time`, `voteup_count`, `url`, `updated_time`, `crawl_time`, `content`, `comment_count`) " \
+              "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE comment_count=VALUES(comment_count)" \
+              ",voteup_count=VALUES(voteup_count),content=VALUES(content),crawl_time=VALUES(crawl_time)"
+
+        params = (self["object_id"], self["answer_id"], self["question_id"], self["author_id"],
+                  self["created_time"], self["voteup_count"], self["url"], self["updated_time"],
+                  self["crawl_time"],self["content"],self["comment_count"])
+
+        return sql, params

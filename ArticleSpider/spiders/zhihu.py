@@ -4,8 +4,7 @@ import json
 import time
 import re
 from urllib import parse
-from ArticleSpider.items import QuestionItemLoader
-from ArticleSpider.items import ZhihuQuestionItem
+from ArticleSpider.items import QuestionItemLoader,AnswerItemLoader,ZhihuQuestionItem,ZhihuAnswerItem
 from ArticleSpider.utils.commom import get_md5
 from datetime import datetime
 
@@ -15,7 +14,14 @@ class ZhihuSpider(scrapy.Spider):
     start_urls = ['https://www.zhihu.com/']
 
     captcha_url = "https://www.zhihu.com/captcha.gif?r={0}&type=login"
-
+    start_answer_url = "https://www.zhihu.com/api/v4/questions/{0}/answers?limit=20&offset=0&include=data[*]." \
+                       "is_normal%2Cadmin_closed_comment%2Creward_info%2Cis_collapsed%2Cannotation_action%2" \
+                       "Cannotation_detail%2Ccollapse_reason%2Cis_sticky%2Ccollapsed_by%2Csuggest_edit%2Ccomment_count" \
+                       "%2Ccan_comment%2Ccontent%2Ceditable_content%2Cvoteup_count%2Creshipment_settings%2Ccomment_" \
+                       "permission%2Ccreated_time%2Cupdated_time%2Creview_info%2Cquestion%2Cexcerpt%2Crelationship." \
+                       "is_authorized%2Cis_author%2Cvoting%2Cis_thanked%2Cis_nothelp%2Cupvoted_followees&data[*]." \
+                       "author.follower_count%2Cbadge[%3F(type=best_answerer)].topics&data[*].mark_infos[*]" \
+                       ".url=&sort_by=default"
     headers = {
         "Host":"www.zhihu.com",
         "Referer":"https://www.zhihu.com/",
@@ -73,7 +79,7 @@ class ZhihuSpider(scrapy.Spider):
             if match_obj:
                 url = match_obj.group(1)
 
-                yield scrapy.Request(url=url, headers=self.headers, callback=self.parse_question)
+                yield scrapy.Request(url=url, headers=self.headers,meta={"id":match_obj.group(2)},callback=self.parse_question)
             else:
                 yield scrapy.Request(url=url, headers=self.headers, callback=self.parse)
 
@@ -88,8 +94,32 @@ class ZhihuSpider(scrapy.Spider):
         itemloader.add_value("crawl_time", datetime.now().strftime("%Y/%m/%d"))
         itemloader.add_value("url", response.url)
         itemloader.add_value("object_id", get_md5(response.url))
-
+        itemloader.add_value("question_id", response.meta.get("id"))
         item = itemloader.load_item()
 
+        answer_url = self.start_answer_url.format(response.meta.get("id"))
+        yield scrapy.Request(url=answer_url, headers=self.headers,callback=self.parse_answer)
         yield item
 
+    def parse_answer(self, response):
+        data = json.loads(response.text)
+
+        for answer in data['data']:
+            itemloader = AnswerItemLoader(item=ZhihuAnswerItem(), response=response)
+            itemloader.add_value('object_id',get_md5(answer['url']))
+            itemloader.add_value('answer_id', answer['id'])
+            itemloader.add_value('question_id', answer['question']['id'])
+            itemloader.add_value('voteup_count', answer['voteup_count'])
+            itemloader.add_value('author_id', answer['author']['id'])
+            itemloader.add_value('content', answer['content'])
+            itemloader.add_value('comment_count', answer['comment_count'])
+            itemloader.add_value('url', answer['url'])
+            itemloader.add_value('updated_time', datetime.fromtimestamp(answer['updated_time']).strftime("%Y/%m/%d"))
+            itemloader.add_value('crawl_time', datetime.now().strftime("%Y/%m/%d"))
+            itemloader.add_value('created_time', datetime.fromtimestamp(answer['updated_time']).strftime("%Y/%m/%d"))
+
+            item = itemloader.load_item()
+            yield item
+        if not data['paging']['is_end']:
+            next_url = data['paging']['next']
+            yield scrapy.Request(url=next_url, headers=self.headers, callback=self.parse_answer)
