@@ -4,7 +4,7 @@ from datetime import datetime
 from urllib import parse
 from ArticleSpider.items import JobboleArticleItem
 from ArticleSpider.utils.commom import get_md5
-from ArticleSpider.items import ArticleLoaderItem
+from ArticleSpider.items import ArticleItemLoader
 
 
 class JobboleSpider(scrapy.Spider):
@@ -26,7 +26,7 @@ class JobboleSpider(scrapy.Spider):
     def parse_article(self, response):
         # 解析文章
         img_url = response.meta.get("img_url", "")
-        itemLoader = ArticleLoaderItem(item=JobboleArticleItem(),response=response)
+        itemLoader = ArticleItemLoader(item=JobboleArticleItem(),response=response)
         itemLoader.add_css("title",".entry-header h1::text")
         itemLoader.add_css("create_time", ".entry-meta-hide-on-mobile::text")
         itemLoader.add_css("mark_nums", ".bookmark-btn::text")

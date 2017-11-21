@@ -12,7 +12,11 @@ from scrapy.loader.processors import MapCompose,TakeFirst,Join
 from w3lib.html import  remove_tags
 
 
-class ArticleLoaderItem(ItemLoader):
+class ArticleItemLoader(ItemLoader):
+    default_output_processor = TakeFirst()
+
+
+class QuestionItemLoader(ItemLoader):
     default_output_processor = TakeFirst()
 
 
@@ -63,3 +67,28 @@ class JobboleArticleItem(scrapy.Item):
                   self["img_url"], self["content"])
 
         return sql,params
+
+#  CREATE TABLE IF NOT EXISTS `zhihu_question` (
+#   `title` varchar(100) COLLATE utf8_bin NOT NULL,
+#   `detail` text COLLATE utf8_bin NOT NULL,
+#   `comment_nums` int(11) NOT NULL,
+#   `attention_nums` int(11) NOT NULL,
+#   `watch_nums` int(11) NOT NULL,
+#   `tags` varchar(100) COLLATE utf8_bin NOT NULL,
+#   `crawl_time` date NOT NULL,
+#   `url` varchar(300) COLLATE utf8_bin NOT NULL,
+#   `object_id` char(32) COLLATE utf8_bin NOT NULL,
+#   PRIMARY KEY (`object_id`)
+# ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+#https://www.zhihu.com/api/v4/questions/21458823/answers?limit=20&offset=0&include=data[*].is_normal%2Cadmin_closed_comment%2Creward_info%2Cis_collapsed%2Cannotation_action%2Cannotation_detail%2Ccollapse_reason%2Cis_sticky%2Ccollapsed_by%2Csuggest_edit%2Ccomment_count%2Ccan_comment%2Ccontent%2Ceditable_content%2Cvoteup_count%2Creshipment_settings%2Ccomment_permission%2Ccreated_time%2Cupdated_time%2Creview_info%2Cquestion%2Cexcerpt%2Crelationship.is_authorized%2Cis_author%2Cvoting%2Cis_thanked%2Cis_nothelp%2Cupvoted_followees&data[*].author.follower_count%2Cbadge[%3F(type=best_answerer)].topics&data[*].mark_infos[*].url=&sort_by=default
+class ZhihuQuestionItem(scrapy.Item):
+    title = scrapy.Field()
+    detail = scrapy.Field()
+    comment_nums = scrapy.Field()
+    attention_nums = scrapy.Field()
+    watch_nums = scrapy.Field()
+    tags = scrapy.Field(output_processor=MapCompose(return_value))
+    crawl_time = scrapy.Field()
+    url = scrapy.Field()
+    object_id = scrapy.Field()

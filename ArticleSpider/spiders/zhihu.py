@@ -4,6 +4,10 @@ import json
 import time
 import re
 from urllib import parse
+from ArticleSpider.items import QuestionItemLoader
+from ArticleSpider.items import ZhihuQuestionItem
+from ArticleSpider.utils.commom import get_md5
+from datetime import datetime
 
 class ZhihuSpider(scrapy.Spider):
     name = 'zhihu'
@@ -64,6 +68,28 @@ class ZhihuSpider(scrapy.Spider):
         # links = [link for link in links if re.match(r".*?question/.*?",link)]
         links = [parse.urljoin(response.url, link) for link in links]
 
-        print(links)
-        pass
+        for url in links:
+            match_obj = re.match(r'(.*?question/(\d+)).*?', url)
+            if match_obj:
+                url = match_obj.group(1)
+
+                yield scrapy.Request(url=url, headers=self.headers, callback=self.parse_question)
+            else:
+                yield scrapy.Request(url=url, headers=self.headers, callback=self.parse)
+
+    def parse_question(self, response):
+        itemloader = QuestionItemLoader(item=ZhihuQuestionItem(), response=response)
+        itemloader.add_css("title", ".QuestionHeader-title::text")
+        itemloader.add_css("detail", ".QuestionHeader-detail")
+        itemloader.add_css("comment_nums", ".QuestionHeader-Comment button::text")
+        itemloader.add_css("attention_nums", ".Button.NumberBoard-item .NumberBoard-value::text")
+        itemloader.add_css("watch_nums", "div.NumberBoard-item > div:nth-child(2)::text")
+        itemloader.add_css("tags", ".Popover div::text")
+        itemloader.add_value("crawl_time", datetime.now().strftime("%Y/%m/%d"))
+        itemloader.add_value("url", response.url)
+        itemloader.add_value("object_id", get_md5(response.url))
+
+        item = itemloader.load_item()
+
+        yield item
 
