@@ -12,15 +12,7 @@ from scrapy.loader.processors import MapCompose,TakeFirst,Join
 from w3lib.html import  remove_tags
 
 
-class ArticleItemLoader(ItemLoader):
-    default_output_processor = TakeFirst()
-
-
-class QuestionItemLoader(ItemLoader):
-    default_output_processor = TakeFirst()
-
-
-class AnswerItemLoader(ItemLoader):
+class mArticleItemLoader(ItemLoader):
     default_output_processor = TakeFirst()
 
 
@@ -115,7 +107,6 @@ class ZhihuQuestionItem(scrapy.Item):
         return sql, params
 
 
-
 # CREATE TABLE `zhihu_answer` (
 #   `object_id` char(32) COLLATE utf8_bin NOT NULL,
 #   `answer_id` int(11) NOT NULL,
@@ -153,3 +144,20 @@ class ZhihuAnswerItem(scrapy.Item):
                   self["crawl_time"],self["content"],self["comment_count"])
 
         return sql, params
+
+
+class LaGouJobItem(scrapy.Item):
+    job_name = scrapy.Field()
+    job_company = scrapy.Field()
+    min_salary = scrapy.Field()
+    max_salary = scrapy.Field()
+    position_type = scrapy.Field()
+    job_request = scrapy.Field()
+    publish_time = scrapy.Field()
+    crawl_time = scrapy.Field()
+    work_addr = scrapy.Field()
+    content = scrapy.Field()
+    url = scrapy.Field()
+    object_id = scrapy.Field()
+
+

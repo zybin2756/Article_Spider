@@ -4,7 +4,7 @@ import json
 import time
 import re
 from urllib import parse
-from ArticleSpider.items import QuestionItemLoader,AnswerItemLoader,ZhihuQuestionItem,ZhihuAnswerItem
+from ArticleSpider.items import mArticleItemLoader,ZhihuQuestionItem,ZhihuAnswerItem
 from ArticleSpider.utils.commom import get_md5
 from datetime import datetime
 
@@ -84,7 +84,7 @@ class ZhihuSpider(scrapy.Spider):
                 yield scrapy.Request(url=url, headers=self.headers, callback=self.parse)
 
     def parse_question(self, response):
-        itemloader = QuestionItemLoader(item=ZhihuQuestionItem(), response=response)
+        itemloader = mArticleItemLoader(item=ZhihuQuestionItem(), response=response)
         itemloader.add_css("title", ".QuestionHeader-title::text")
         itemloader.add_css("detail", ".QuestionHeader-detail")
         itemloader.add_css("comment_nums", ".QuestionHeader-Comment button::text")
@@ -105,7 +105,7 @@ class ZhihuSpider(scrapy.Spider):
         data = json.loads(response.text)
 
         for answer in data['data']:
-            itemloader = AnswerItemLoader(item=ZhihuAnswerItem(), response=response)
+            itemloader = mArticleItemLoader(item=ZhihuAnswerItem(), response=response)
             itemloader.add_value('object_id',get_md5(answer['url']))
             itemloader.add_value('answer_id', answer['id'])
             itemloader.add_value('question_id', answer['question']['id'])
