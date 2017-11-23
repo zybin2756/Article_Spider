@@ -146,18 +146,72 @@ class ZhihuAnswerItem(scrapy.Item):
         return sql, params
 
 
+
+def deal_work_addr(value):
+    addr_list = value.split("\n")
+    addr_list = [ _.strip() for _ in addr_list if "查看地图" not in _]
+    return "".join(addr_list)
+
+
+# CREATE TABLE IF NOT EXISTS `lagou_job` (
+#   `job_name` varchar(50) COLLATE utf8_bin NOT NULL,
+#   `company_name` varchar(50) COLLATE utf8_bin NOT NULL,
+#   `company_url` varchar(300) COLLATE utf8_bin NOT NULL,
+#   `min_salary` int(11) NOT NULL,
+#   `max_salary` int(11) NOT NULL,
+#   `position_type` varchar(150) COLLATE utf8_bin NOT NULL,
+#   `job_request` varchar(150) COLLATE utf8_bin NOT NULL,
+#   `publish_time` varchar(50) COLLATE utf8_bin NOT NULL,
+#   `crawl_time` date NOT NULL,
+#   `work_addr` varchar(100) COLLATE utf8_bin NOT NULL,
+#   `content` text COLLATE utf8_bin NOT NULL,
+#   `url` varchar(300) COLLATE utf8_bin NOT NULL,
+#   `object_id` char(32) COLLATE utf8_bin NOT NULL,
+#   PRIMARY KEY (`object_id`),
+#   UNIQUE KEY `object_id` (`object_id`)
+# ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+
 class LaGouJobItem(scrapy.Item):
     job_name = scrapy.Field()
-    job_company = scrapy.Field()
+    company_name = scrapy.Field()
+    company_url = scrapy.Field()
     min_salary = scrapy.Field()
     max_salary = scrapy.Field()
-    position_type = scrapy.Field()
-    job_request = scrapy.Field()
+    position_type = scrapy.Field(output_processor=MapCompose(return_value))
+    job_request = scrapy.Field(output_processor=MapCompose(return_value))
     publish_time = scrapy.Field()
     crawl_time = scrapy.Field()
-    work_addr = scrapy.Field()
+    work_addr = scrapy.Field(output_processor=MapCompose(remove_tags, deal_work_addr))
     content = scrapy.Field()
     url = scrapy.Field()
     object_id = scrapy.Field()
 
+    def get_insert_sql(self):
+        self['position_type'] = ",".join(self['position_type'])
+        self['job_request'] = [ value.strip("/") for value in self['job_request'][1:]]
+        self['job_request'] = ",".join(self['job_request'])
+        match_obj = re.match(r'((\d+)k-(\d+))|((\d+)k)',self['min_salary'])
+        if match_obj:
+            if match_obj.group(2):
+                self['min_salary'] = match_obj.group(2)
+                self['max_salary'] = self['min_salary']
 
+            if match_obj.group(3):
+                self['max_salary'] = match_obj.group(3)
+
+        self['work_addr'] = self['work_addr'][0]
+
+        sql = """
+            INSERT INTO `lagou_job`(`job_name`, `company_name`, `company_url`, `min_salary`, `max_salary`, `position_type`,
+             `job_request`, `publish_time`, `crawl_time`, `work_addr`, `content`, `url`, `object_id`)
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE min_salary=VALUES(min_salary) ,
+             max_salary=VALUES(max_salary),content=VALUES(content),crawl_time=VALUES(crawl_time),
+             job_request=VALUES(job_request),publish_time=VALUES(publish_time)
+        """
+
+        params = (self["job_name"], self["company_name"], self["company_url"], self["min_salary"],
+                  self["max_salary"], self["position_type"], self["job_request"], self["publish_time"],
+                  self["crawl_time"], self["work_addr"], self["content"], self["url"], self["object_id"])
+
+        return sql, params

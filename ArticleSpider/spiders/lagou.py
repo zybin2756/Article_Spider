@@ -17,7 +17,7 @@ class LagouSpider(CrawlSpider):
 
     custom_settings = {
         "COOKIES_ENABLED": False,
-        "DOWNLOAD_DELAY": 1,
+
         'DEFAULT_REQUEST_HEADERS': {
             'Accept': 'application/json, text/javascript, */*; q=0.01',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -40,7 +40,8 @@ class LagouSpider(CrawlSpider):
     def parse_job(self, response):
         itemLoader = mArticleItemLoader(item=LaGouJobItem(),response=response)
         itemLoader.add_css("job_name",".job-name::attr(title)")
-        itemLoader.add_css("job_company", ".job_company .f1::text")
+        itemLoader.add_css("company_url", "#job_company dt a::attr(href)")
+        itemLoader.add_css("company_name", "#job_company dt a img::attr(alt)")
         itemLoader.add_css("min_salary", ".salary::text")
         itemLoader.add_css("position_type", ".position-label .labels::text")
         itemLoader.add_css("job_request", ".job_request span::text")
